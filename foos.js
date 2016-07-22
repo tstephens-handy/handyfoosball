@@ -138,6 +138,14 @@ angular.module('handy-foos', ['firebase'])
         });
     }
 
+    FirebaseData.games.$loaded(games => {
+        _.each(games, game => {
+            if(_.isString(game.winner)) {
+                game.winner = Number(game.winner);
+            }
+        });
+    });
+
     return {
         name() {
             if(firebase.auth().currentUser) {
@@ -191,7 +199,7 @@ angular.module('handy-foos', ['firebase'])
         <div class='rows'>
             <div class='rows' ng-if="game.endTime">
                 <span ng-bind="game.endTime | humanize"></span>
-                Winners: Team {{Number(game.winner) + 1}}
+                Winners: Team {{game.winner + 1}}
             </div>
             <span ng-if='game.startTime && !game.endTime'>Started {{game.startTime | humanize}}</span>
             <button class='large confirm' ng-if='gameData.gameFull() && !game.startTime' ng-click='gameData.startGame()' ng-disabled='gameData.hasActiveGame()'>Start Game</button>
