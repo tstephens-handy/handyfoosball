@@ -69,6 +69,9 @@
                 padding: 0.75rem;
                 margin: 0.5rem;
             }
+            .disabled-open {
+                padding: 0.5rem;
+            }
         </style>
     </head>
     <body class='rows' ng-controller='FoosController as foos'>
@@ -79,14 +82,16 @@
                     <h1>Players</h1>
                 </div>
                 <small>Last Ranked: {{foos.lastRanked | humanize}}</small>
-                <user ng-repeat="user in foos.users | orderBy:'-ratingInfo.rating'" user='user'></user>
+                <user ng-repeat="user in foos.users | orderBy:'-ratingInfo.rating'" user='user' live-game='foos.liveGame()'></user>
             </div>
             <div class='list'>
                 <div class='centered cols'>
                     <h1>Games</h1>
                     <button class='large confirm' ng-click='foos.createGame()' ng-disabled='foos.disableButtons()'>New Game</button>
+                    <button class='large confirm' ng-click='foos.createLiveGame()' ng-disabled='foos.disableButtons()'>New Live Game</button>
                 </div>
-                <game ng-repeat="game in foos.games | orderBy:'-startTime' | limitTo:10" game='game' user-id='foos.userId' disable-buttons='foos.disableButtons()'></game>
+                <game ng-if='foos.liveGame()' game='foos.liveGame()' is-live='true'></game>
+                <game ng-if='!foos.liveGame()' ng-repeat="game in foos.games | orderBy:'-startTime' | limitTo:10" game='game' user-id='foos.userId' disable-buttons='foos.disableButtons()'></game>
             </div>
         </div>
     </body>

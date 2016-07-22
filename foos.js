@@ -152,6 +152,9 @@ angular.module('handy-foos', ['firebase'])
         },
         userId: UserService.getUser().$id,
         users: FirebaseData.users,
+        liveGame() {
+            return _.find(FirebaseData.games, 'live');
+        },
         games: FirebaseData.games,
         lastRanked: FirebaseData.rankingData.lastRanked,
         disableButtons() {
@@ -164,21 +167,31 @@ angular.module('handy-foos', ['firebase'])
                     player2: ""
                 },{player1: "", player2: ""}]
             });
+        },
+        createLiveGame() {
+            FirebaseData.games.$add({
+                live: true,
+                teams: [{player1: "", player2: ""},{player1: "", player2: ""}]
+            }).catch((err) => {
+                debugger;
+            });
         }
+
     };
 }])
 .directive('game', [() => { return {
     restrict: 'E',
     scope: {
         game: '=',
-        userId: '=',
-        disableButtons: '='
+        userId: '=?',
+        disableButtons: '=?',
+        isLive: '=?'
     },
     template: `
         <div class='rows'>
             <div class='rows' ng-if="game.endTime">
                 <span ng-bind="game.endTime | humanize"></span>
-                Winners: Team {{game.winner + 1}}
+                Winners: Team {{Number(game.winner) + 1}}
             </div>
             <span ng-if='game.startTime && !game.endTime'>Started {{game.startTime | humanize}}</span>
             <button class='large confirm' ng-if='gameData.gameFull() && !game.startTime' ng-click='gameData.startGame()' ng-disabled='gameData.hasActiveGame()'>Start Game</button>
@@ -191,7 +204,8 @@ angular.module('handy-foos', ['firebase'])
                     <span class='centered cols' ng-repeat='(player, userKey) in team'>
                         <div ng-if='userKey' ng-bind="userKey == userId ? 'You' : gameData.getUserByKey(userKey).displayName"></div>
                         <button class='reject' ng-if='userKey == userId && !game.startTime' ng-click='gameData.leaveTeam(team, player)'>Leave Team</button>
-                        <button class='confirm' ng-if='!userKey' ng-click='gameData.joinTeam(team, player)' ng-disabled='disableButtons'>Join Team</button>
+                        <button class='confirm' ng-if='!userKey && !isLive && !disableButtons' ng-click='gameData.joinTeam(team, player)'>Join Team</button>
+                        <span class='disabled-open' ng-if='!userKey && disableButtons'>OPEN</span>
                     </span>
                 </div>
             </div>
@@ -230,6 +244,9 @@ angular.module('handy-foos', ['firebase'])
     },
     startGame() {
         $scope.game.startTime = moment().format();
+        if($scope.game.live) {
+            $scope.game.live = false;
+        }
         FirebaseData.games.$save($scope.game);
         FirebaseData.activeGame.gameId = $scope.game.$id;
         FirebaseData.activeGame.$save();
@@ -244,7 +261,8 @@ angular.module('handy-foos', ['firebase'])
 .directive('user', [() => { return {
     restrict: 'E',
     scope: {
-        user: '='
+        user: '=',
+        liveGame: '='
     },
     template: `
         <div class='centered outside cols'>
@@ -253,12 +271,28 @@ angular.module('handy-foos', ['firebase'])
                 <span ng-bind="user.wins + ' / ' + user.losses"></span>
             </span>
             <span class='name' ng-bind='user.displayName'></span>
+            <button class='reject' ng-if='liveGame && userData.teamHasSlots(liveGame, 0) && !userData.inGame' ng-click='userData.joinTeam(liveGame, 0)'>Team 1</button>
+            <button class='confirm' ng-if='liveGame && userData.teamHasSlots(liveGame, 1) && !userData.inGame' ng-click='userData.joinTeam(liveGame, 1)'>Team 2</button>
         </div>
 
     `,
     controller: 'UserController as userData'
 };}])
-.controller('UserController', [() => { return {
+.controller('UserController', ["$scope", ($scope) => { return {
+    joinTeam(game, team) {
+        if(_.isEmpty(game.teams[team].player1)) {
+            game.teams[team].player1 = $scope.user.$id;
+            this.inGame = true;
+            FirebaseData.games.$save(game);
+        } else if(_.isEmpty(game.teams[team].player2)) {
+            game.teams[team].player2 = $scope.user.$id;
+            this.inGame = true;
+            FirebaseData.games.$save(game);
+        }
+    },
+    teamHasSlots(game, team) {
+        return _.isEmpty(game.teams[team].player1) || _.isEmpty(game.teams[team].player2);
+    }
 };}])
 .run(["FirebaseData", "RankService", "UserService", (FirebaseData, RankService, UserService) => {
     FirebaseData.games.$loaded((games) => {
