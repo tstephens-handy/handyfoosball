@@ -1,0 +1,93 @@
+<html ng-app='handy-foos'>
+    <head>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.7/angular.min.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/3.2.0/firebase.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.min.js"></script>
+        <script src="https://cdn.firebase.com/libs/angularfire/2.0.1/angularfire.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.14.1/moment.min.js"></script>
+        <script src="glicko2.js"></script>
+        <script src="foos.es5.js"></script>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            body {
+                margin: auto;
+                max-width: 1200px;
+                color: #454545;
+            }
+            nav {
+                padding: 1rem;
+            }
+            .cols {
+                display: flex;
+                flex-flow: row wrap;
+                justify-content: space-around;
+            }
+            .rows {
+                display: flex;
+                flex-flow: column nowrap;
+            }
+            .centered {
+                align-items: center;
+            }
+            .outside {
+                justify-content: space-between;
+            }
+            user {
+                border-bottom: 1px solid darkorchid;
+                width: ;
+            }
+            user .rating {
+                width: 10ch;
+            }
+            button {
+                border: 1px solid #999;
+                border-radius: 3px;
+                background-color: white;
+                padding: 0.5rem;
+                margin: 0.5rem;
+            }
+            button.large {
+                font-size: 1.2rem;
+                font-weight: 200;
+            }
+            button.confirm {
+                border-color: transparent;
+                background-color: green;
+                color: white;
+            }
+            button.reject {
+                border-color: transparent;
+                background-color: red;
+            }
+            button[disabled] {
+                opacity: 0.5;
+            }
+            game {
+                display: block;
+                background-color: lightgray;
+                border-radius: 5px;
+                padding: 0.75rem;
+                margin: 0.5rem;
+            }
+        </style>
+    </head>
+    <body class='rows' ng-controller='FoosController as foos'>
+        <nav class='cols'>Logged in as {{foos.name()}}<a href='#' ng-if='!foos.userId' ng-click='foos.login()'>Login</a></nav>
+        <div class='cols'>
+            <div class='rows'>
+                <div class='centered cols'>
+                    <h1>Players</h1>
+                </div>
+                <small>Last Ranked: {{foos.lastRanked | humanize}}</small>
+                <user ng-repeat="user in foos.users | orderBy:'-ratingInfo.rating'" user='user'></user>
+            </div>
+            <div class='list'>
+                <div class='centered cols'>
+                    <h1>Games</h1>
+                    <button class='large confirm' ng-click='foos.createGame()' ng-disabled='foos.disableButtons()'>New Game</button>
+                </div>
+                <game ng-repeat="game in foos.games | orderBy:'-startTime' | limitTo:10" game='game' user-id='foos.userId' disable-buttons='foos.disableButtons()'></game>
+            </div>
+        </div>
+    </body>
+</html>
